@@ -13,7 +13,9 @@
     "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "build:analyze": "npm run build && npx vite-bundle-analyzer dist/assets/*.js",
-    "pre-commit": "npm run type-check && npm run lint && npm run format:check"
+    "pre-commit": "npm run type-check && npm run lint && npm run format:check",
+    "vercel-build": "npm run build",
+    "start": "npm run preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.5",
