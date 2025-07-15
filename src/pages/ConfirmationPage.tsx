@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Calendar, Clock, MapPin, FileText, CheckCircle, ArrowLeft, ArrowRight } from 'lucide-react'
 
 interface ExtractedEvent {
@@ -16,6 +16,14 @@ interface ConfirmationPageProps {
 }
 
 export function ConfirmationPage({ events, onConfirm, onBack }: ConfirmationPageProps) {
+  const [loading, setLoading] = useState(false)
+
+  const handleConfirm = async () => {
+    setLoading(true)
+    await onConfirm()
+    setLoading(false)
+  }
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString)
@@ -122,12 +130,22 @@ export function ConfirmationPage({ events, onConfirm, onBack }: ConfirmationPage
             </button>
             
             <button
-              onClick={onConfirm}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 smooth-transition font-medium"
+              onClick={handleConfirm}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-xl hover:from-green-700 hover:to-blue-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 smooth-transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Calendar className="w-5 h-5" />
-              구글 캘린더에 등록하기
-              <ArrowRight className="w-5 h-5" />
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  구글 캘린더에 등록 중...
+                </>
+              ) : (
+                <>
+                  <Calendar className="w-5 h-5" />
+                  구글 캘린더에 등록하기
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </div>
 

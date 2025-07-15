@@ -74,6 +74,7 @@ export function ResultPage({ result, onBackToInput }: ResultPageProps) {
                       <li>✅ 이벤트 정보가 구글 캘린더에 추가되었습니다</li>
                       <li>✅ 설정한 시간에 알림을 받을 수 있습니다</li>
                       <li>✅ 구글 캘린더에서 언제든 수정할 수 있습니다</li>
+                      <li>✅ 모든 기기에서 동기화되어 확인 가능합니다</li>
                     </ul>
                   </div>
                 </div>

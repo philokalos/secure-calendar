@@ -6,6 +6,7 @@ import { LoginPage } from './pages/LoginPage'
 import { InputPage } from './pages/InputPage'
 import { ConfirmationPage } from './pages/ConfirmationPage'
 import { ResultPage } from './pages/ResultPage'
+import { googleCalendarService } from './utils/googleCalendar'
 
 type AppState = 'input' | 'confirmation' | 'result'
 
@@ -40,14 +41,30 @@ function AppContent() {
     setCurrentState('confirmation')
   }
 
-  const handleEventsConfirmed = () => {
-    // 구글 캘린더 등록 로직 (추후 구현)
-    setRegistrationResult({
-      success: true,
-      message: '이벤트가 성공적으로 등록되었습니다!',
-      calendarLink: 'https://calendar.google.com'
-    })
-    setCurrentState('result')
+  const handleEventsConfirmed = async () => {
+    try {
+      if (extractedEvents.length === 1) {
+        // 단일 이벤트 등록
+        const result = await googleCalendarService.createEvent(extractedEvents[0])
+        setRegistrationResult(result)
+      } else if (extractedEvents.length > 1) {
+        // 다중 이벤트 등록
+        const result = await googleCalendarService.createEvents(extractedEvents)
+        setRegistrationResult({
+          success: result.success,
+          message: result.message,
+          calendarLink: result.success ? 'https://calendar.google.com' : undefined
+        })
+      }
+      setCurrentState('result')
+    } catch (error) {
+      console.error('이벤트 등록 실패:', error)
+      setRegistrationResult({
+        success: false,
+        message: '이벤트 등록 중 예상치 못한 오류가 발생했습니다.'
+      })
+      setCurrentState('result')
+    }
   }
 
   const handleBackToInput = () => {
