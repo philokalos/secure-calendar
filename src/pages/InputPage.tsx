@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Calendar, Upload, FileText, Image, Sparkles, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { TextAnalyzer } from '../utils/textAnalyzer'
 
 interface ExtractedEvent {
   title: string
@@ -38,20 +39,33 @@ export function InputPage({ onEventsExtracted }: InputPageProps) {
     setLoading(true)
     
     try {
-      // 임시 더미 데이터 - 실제로는 AI 분석 API 호출
-      await new Promise(resolve => setTimeout(resolve, 2000)) // 로딩 시뮬레이션
+      let extractedEvents: ExtractedEvent[] = []
       
-      const mockEvents: ExtractedEvent[] = [
-        {
-          title: '회의',
-          date: '2024-01-15',
-          time: '14:00',
-          description: text || '이미지에서 추출된 이벤트',
-          location: '회의실 A'
-        }
-      ]
+      if (text.trim()) {
+        // 텍스트 분석
+        const analyzer = new TextAnalyzer()
+        extractedEvents = analyzer.analyzeText(text)
+        console.log('추출된 이벤트:', extractedEvents)
+      } else if (selectedFile) {
+        // 이미지 OCR 처리 (추후 구현)
+        await new Promise(resolve => setTimeout(resolve, 2000)) // OCR 시뮬레이션
+        extractedEvents = [
+          {
+            title: '이미지에서 추출된 일정',
+            date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 내일
+            time: '09:00',
+            description: '이미지에서 추출된 이벤트 정보',
+            location: undefined
+          }
+        ]
+      }
       
-      onEventsExtracted(mockEvents)
+      if (extractedEvents.length === 0) {
+        alert('텍스트에서 일정 정보를 찾을 수 없습니다. 더 구체적으로 입력해주세요.')
+        return
+      }
+      
+      onEventsExtracted(extractedEvents)
     } catch (error) {
       console.error('이벤트 추출 실패:', error)
       alert('이벤트 추출 중 오류가 발생했습니다.')
@@ -114,8 +128,13 @@ export function InputPage({ onEventsExtracted }: InputPageProps) {
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="예: 내일 오후 2시에 강남역에서 회의가 있습니다..."
-                className="w-full h-32 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 smooth-transition resize-none"
+                placeholder={`예시:
+• 내일 오후 2시 친구 만남
+• 24일 오후 5시 미팅 예정
+• 3일후 7시에 라이브방송 시작
+• 모레 오전 10시 병원 진료
+• 금요일 6시 저녁 약속`}
+                className="w-full h-40 p-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 smooth-transition resize-none"
               />
             </div>
 
