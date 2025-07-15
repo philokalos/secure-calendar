@@ -15,6 +15,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signUp: (email: string, password: string) => Promise<{ error: AuthError | CustomAuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
+  resendConfirmation: (email: string) => Promise<{ error: AuthError | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -52,11 +53,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error }
+    try {
+      console.log('로그인 시도:', { email, hasPassword: !!password })
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      })
+      
+      if (error) {
+        console.error('로그인 에러:', error)
+        
+        // Supabase 에러 메시지 한국어화
+        let errorMessage = error.message
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다. 이메일 확인을 완료했는지 확인해주세요.'
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = '이메일 확인이 완료되지 않았습니다. 이메일을 확인해주세요.'
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = '올바른 이메일 형식을 입력해주세요.'
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = '너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.'
+        }
+        
+        return { error: { ...error, message: errorMessage } as AuthError }
+      }
+      
+      console.log('로그인 성공:', data)
+      return { error: null }
+    } catch (err) {
+      console.error('로그인 예외 발생:', err)
+      return { 
+        error: { 
+          message: '로그인 중 오류가 발생했습니다. 다시 시도해주세요.',
+          name: 'UnknownError'
+        } as AuthError 
+      }
+    }
   }
 
   const signUp = async (email: string, password: string) => {
@@ -90,7 +123,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            // 사용자 메타데이터 추가 가능
+          }
         }
       })
       
@@ -140,6 +176,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error }
   }
 
+  const resendConfirmation = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      
+      if (error) {
+        console.error('이메일 재전송 에러:', error)
+        let errorMessage = error.message
+        if (error.message.includes('For security purposes')) {
+          errorMessage = '보안상 이유로 잠시 후 다시 시도해주세요.'
+        }
+        return { error: { ...error, message: errorMessage } as AuthError }
+      }
+      
+      return { error: null }
+    } catch (err) {
+      console.error('이메일 재전송 예외:', err)
+      return { 
+        error: { 
+          message: '이메일 재전송 중 오류가 발생했습니다.',
+          name: 'ResendError'
+        } as AuthError 
+      }
+    }
+  }
+
   const value = {
     user,
     session,
@@ -147,6 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signIn,
     signUp,
     signOut,
+    resendConfirmation,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

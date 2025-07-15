@@ -8,8 +8,9 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showResendButton, setShowResendButton] = useState(false)
 
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, resendConfirmation } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,6 +47,10 @@ export function LoginPage() {
           setIsLogin(true) // 로그인 모드로 전환
         } else {
           setError(error.message)
+          // 이메일 확인 관련 에러 시 재전송 버튼 표시
+          if (error.message.includes('이메일 확인') || error.message.includes('Invalid login credentials')) {
+            setShowResendButton(true)
+          }
         }
       } else if (!isLogin) {
         // 회원가입 성공 시
@@ -56,6 +61,28 @@ export function LoginPage() {
     } catch (err) {
       console.error('인증 오류:', err)
       setError('예상치 못한 오류가 발생했습니다. 다시 시도해주세요.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    if (!email.trim()) {
+      setError('이메일을 입력해주세요.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await resendConfirmation(email)
+      if (error) {
+        setError(error.message)
+      } else {
+        alert('확인 이메일을 다시 전송했습니다. 이메일을 확인해주세요.')
+        setShowResendButton(false)
+      }
+    } catch {
+      setError('이메일 재전송 중 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }
@@ -76,7 +103,31 @@ export function LoginPage() {
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm">
-            {error}
+            <div className="flex items-start gap-2">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                {error}
+                {error.includes('이메일 확인') && (
+                  <div className="mt-2 text-xs text-gray-600">
+                    📧 회원가입 시 받은 이메일의 확인 링크를 클릭해주세요.
+                  </div>
+                )}
+                {showResendButton && (
+                  <button
+                    type="button"
+                    onClick={handleResendConfirmation}
+                    disabled={loading}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-700 underline disabled:opacity-50"
+                  >
+                    확인 이메일 다시 보내기
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -136,6 +187,7 @@ export function LoginPage() {
             onClick={() => {
               setIsLogin(!isLogin)
               setError('')
+              setShowResendButton(false)
             }}
             className="text-blue-600 hover:text-blue-700 text-sm"
           >
