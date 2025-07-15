@@ -16,14 +16,46 @@ export function LoginPage() {
     setLoading(true)
     setError('')
 
+    // 클라이언트 측 유효성 검사
+    if (!email.trim()) {
+      setError('이메일을 입력해주세요.')
+      setLoading(false)
+      return
+    }
+
+    if (!password.trim()) {
+      setError('비밀번호를 입력해주세요.')
+      setLoading(false)
+      return
+    }
+
+    if (!isLogin && password.length < 6) {
+      setError('비밀번호는 최소 6자 이상이어야 합니다.')
+      setLoading(false)
+      return
+    }
+
     try {
       const { error } = isLogin ? await signIn(email, password) : await signUp(email, password)
 
       if (error) {
-        setError(error.message)
+        // 성공적인 회원가입 메시지인 경우 (이메일 확인 필요)
+        if (error.status === 200) {
+          setError('')
+          alert(error.message)
+          setIsLogin(true) // 로그인 모드로 전환
+        } else {
+          setError(error.message)
+        }
+      } else if (!isLogin) {
+        // 회원가입 성공 시
+        setError('')
+        alert('회원가입이 완료되었습니다!')
+        setIsLogin(true) // 로그인 모드로 전환
       }
-    } catch {
-      setError('An unexpected error occurred')
+    } catch (err) {
+      console.error('인증 오류:', err)
+      setError('예상치 못한 오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
       setLoading(false)
     }

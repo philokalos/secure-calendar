@@ -9,20 +9,6 @@ interface ValidatedEnv extends RequiredEnvVars {
   isProduction: boolean
 }
 
-function validateEnvVar(name: string, value: string | undefined, required = true): string {
-  if (!value) {
-    if (required) {
-      throw new Error(`환경변수 ${name}이 설정되지 않았습니다.`)
-    }
-    return ''
-  }
-
-  if (value.trim() === '') {
-    throw new Error(`환경변수 ${name}이 비어있습니다.`)
-  }
-
-  return value.trim()
-}
 
 function validateSupabaseUrl(url: string): string {
   try {
@@ -59,18 +45,25 @@ function validateSupabaseKey(key: string): string {
 
 export function validateEnvironment(): ValidatedEnv {
   try {
-    // 프로덕션에서 환경변수가 주입되지 않을 경우 기본값 사용
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://rjttbmqpquhmvbhklnzd.supabase.co'
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdHRibXFwcXVobXZiaGtsbnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NzgwMjUsImV4cCI6MjA2ODA1NDAyNX0.FOy2_k58ZjTALG_Lt3-x3EQuyh-_3Z_UmlI0QX6Qgcg'
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
     const claudeApiKey = import.meta.env.VITE_CLAUDE_API_KEY || ''
 
     console.log('Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseKey: !!supabaseKey,
-      supabaseUrlLength: supabaseUrl.length,
       isDev: import.meta.env.DEV,
       isProd: import.meta.env.PROD
     })
+
+    // 환경변수가 없는 경우 적절한 에러 메시지 제공
+    if (!supabaseUrl) {
+      throw new Error('VITE_SUPABASE_URL 환경변수가 설정되지 않았습니다. .env 파일을 확인해주세요.')
+    }
+
+    if (!supabaseKey) {
+      throw new Error('VITE_SUPABASE_ANON_KEY 환경변수가 설정되지 않았습니다. .env 파일을 확인해주세요.')
+    }
 
     return {
       VITE_SUPABASE_URL: validateSupabaseUrl(supabaseUrl),
@@ -82,19 +75,20 @@ export function validateEnvironment(): ValidatedEnv {
   } catch (error) {
     console.error('환경변수 검증 실패:', error)
     
-    // 개발 환경에서는 에러를 던지지만, 프로덕션에서는 기본값 사용
+    // 개발 환경에서 환경변수가 없으면 기본값 사용 (개발 편의를 위해)
     if (import.meta.env.DEV) {
-      throw error
+      console.warn('개발 환경에서 기본값 사용')
+      return {
+        VITE_SUPABASE_URL: 'https://rjttbmqpquhmvbhklnzd.supabase.co',
+        VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdHRibXFwcXVobXZiaGtsbnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NzgwMjUsImV4cCI6MjA2ODA1NDAyNX0.FOy2_k58ZjTALG_Lt3-x3EQuyh-_3Z_UmlI0QX6Qgcg',
+        VITE_CLAUDE_API_KEY: '',
+        isDevelopment: true,
+        isProduction: false,
+      }
     }
     
-    // 프로덕션 환경에서 환경변수 실패 시 기본값 반환
-    return {
-      VITE_SUPABASE_URL: 'https://rjttbmqpquhmvbhklnzd.supabase.co',
-      VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdHRibXFwcXVobXZiaGtsbnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NzgwMjUsImV4cCI6MjA2ODA1NDAyNX0.FOy2_k58ZjTALG_Lt3-x3EQuyh-_3Z_UmlI0QX6Qgcg',
-      VITE_CLAUDE_API_KEY: '',
-      isDevelopment: false,
-      isProduction: true,
-    }
+    // 프로덕션에서는 에러를 다시 던짐
+    throw error
   }
 }
 
