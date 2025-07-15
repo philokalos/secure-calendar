@@ -47,7 +47,7 @@ export function EventForm({
   selectedDate,
   onSave,
   onDelete,
-  loading: _loading = false,
+  // loading = false,
 }: EventFormProps) {
   const [formData, setFormData] = useState<EventFormData>({
     title: '',

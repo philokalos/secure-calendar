@@ -4,6 +4,7 @@ import { Calendar } from '../components/Calendar'
 import { EventForm } from '../components/EventForm'
 import { EventList } from '../components/EventList'
 import { AIExtractor } from '../components/AIExtractor'
+import { ProfilePage } from './ProfilePage'
 import { MainLayout } from '../components/layout/MainLayout'
 import { PageLoader } from '../components/ui/LoadingSpinner'
 import { useAuth } from '../contexts/AuthContext'
@@ -18,6 +19,7 @@ export function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [showAIExtractor, setShowAIExtractor] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('calendar')
 
   useAuth() // Hook required for auth context
@@ -137,7 +139,7 @@ export function CalendarPage() {
       onViewChange={setViewMode}
       onShowAIExtractor={() => setShowAIExtractor(!showAIExtractor)}
       onCreateEvent={handleEventCreate}
-      onShowProfile={() => console.log('Profile clicked')} // TODO: 프로필 페이지 구현
+      onShowProfile={() => setShowProfile(true)}
     >
       {/* 에러 표시 */}
       {error && (
@@ -192,8 +194,28 @@ export function CalendarPage() {
         selectedDate={selectedDate}
         onSave={handleEventSave}
         onDelete={handleEventDelete}
-        loading={loading}
+        // loading={loading}
       />
+
+      {/* 프로필 모달 */}
+      {showProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">프로필</h2>
+              <button
+                onClick={() => setShowProfile(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-0">
+              <ProfilePage />
+            </div>
+          </div>
+        </div>
+      )}
     </MainLayout>
   )
 }

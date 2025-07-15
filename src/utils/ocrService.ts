@@ -50,6 +50,8 @@ export class OCRService {
     imageFile: File | string,
     _progressCallback?: (progress: number) => void
   ): Promise<OCRResult> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const progressCallback = _progressCallback;
     if (!this.worker) {
       await this.initialize()
     }
@@ -79,6 +81,8 @@ export class OCRService {
     dataURL: string,
     _progressCallback?: (progress: number) => void
   ): Promise<OCRResult> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const progressCallback = _progressCallback;
     return this.recognizeText(dataURL)
   }
 
