@@ -26,22 +26,31 @@ function validateEnvVar(name: string, value: string | undefined, required = true
 
 function validateSupabaseUrl(url: string): string {
   try {
+    console.log('URL 검증 중:', url)
     const parsedUrl = new URL(url)
+    console.log('파싱된 URL:', { hostname: parsedUrl.hostname, protocol: parsedUrl.protocol })
+    
     if (!parsedUrl.hostname.includes('supabase.co')) {
+      console.error('잘못된 Supabase 호스트:', parsedUrl.hostname)
       throw new Error('유효하지 않은 Supabase URL입니다.')
     }
     return url
-  } catch {
+  } catch (error) {
+    console.error('URL 파싱 실패:', error)
     throw new Error('Supabase URL 형식이 올바르지 않습니다.')
   }
 }
 
 function validateSupabaseKey(key: string): string {
+  console.log('키 검증 중:', { keyLength: key.length, keyPrefix: key.substring(0, 10) })
+  
   if (key.length < 50) {
+    console.error('키가 너무 짧음:', key.length)
     throw new Error('Supabase 키가 너무 짧습니다.')
   }
 
   if (!key.startsWith('eyJ')) {
+    console.error('키 형식 오류, 시작:', key.substring(0, 10))
     throw new Error('유효하지 않은 Supabase 키 형식입니다.')
   }
 

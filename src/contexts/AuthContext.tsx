@@ -54,11 +54,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    return { error }
+    try {
+      console.log('회원가입 시도:', { email, hasPassword: !!password })
+      console.log('Supabase 클라이언트 상태:', {
+        hasSupabase: !!supabase,
+        hasAuth: !!supabase?.auth
+      })
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+      
+      console.log('회원가입 결과:', { data, error })
+      return { error }
+    } catch (err) {
+      console.error('회원가입 예외 발생:', err)
+      return { error: err as any }
+    }
   }
 
   const signOut = async () => {

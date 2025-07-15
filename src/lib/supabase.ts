@@ -1,7 +1,29 @@
 import { createClient } from '@supabase/supabase-js'
 import { env } from '../utils/envValidation'
 
-export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY)
+// 디버깅용 로그
+console.log('Supabase 초기화:', {
+  url: env.VITE_SUPABASE_URL,
+  keyLength: env.VITE_SUPABASE_ANON_KEY?.length,
+  keyPrefix: env.VITE_SUPABASE_ANON_KEY?.substring(0, 10)
+})
+
+// URL과 키 검증
+if (!env.VITE_SUPABASE_URL || !env.VITE_SUPABASE_ANON_KEY) {
+  console.error('Supabase 환경변수 누락:', {
+    hasUrl: !!env.VITE_SUPABASE_URL,
+    hasKey: !!env.VITE_SUPABASE_ANON_KEY
+  })
+  throw new Error('Supabase 환경변수가 설정되지 않았습니다')
+}
+
+export const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 
 export type Database = {
   public: {
