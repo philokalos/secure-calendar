@@ -32,7 +32,7 @@ export function MainLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 fade-in">
       {/* 헤더 */}
       <Header isSidebarOpen={isSidebarOpen} onToggleSidebar={toggleSidebar} />
 
