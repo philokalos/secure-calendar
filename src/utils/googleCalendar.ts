@@ -33,75 +33,78 @@ interface CalendarEvent {
 export class GoogleCalendarService {
   private isInitialized = false
   private isSignedIn = false
+  private initializationPromise: Promise<void> | null = null
 
-  constructor() {
-    this.loadGapi()
-  }
-
-  // Google API 스크립트 로드
-  private async loadGapi(): Promise<void> {
-    if (typeof window.gapi !== 'undefined') {
-      console.log('Google API 이미 로드됨')
-      return new Promise((resolve, reject) => {
-        window.gapi.load('client:auth2', () => {
-          this.initializeGapi().then(resolve).catch(reject)
-        })
-      })
+  // Google API 초기화 (단일 인스턴스)
+  private async ensureInitialized(): Promise<void> {
+    if (this.isInitialized) {
+      return
     }
 
-    console.log('Google API 스크립트 로드 중...')
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script')
-      script.src = 'https://apis.google.com/js/api.js'
-      script.onload = () => {
-        console.log('Google API 스크립트 로드 완료')
-        window.gapi.load('client:auth2', () => {
-          this.initializeGapi().then(resolve).catch(reject)
-        })
-      }
-      script.onerror = (error) => {
-        console.error('Google API 스크립트 로드 실패:', error)
-        reject(error)
-      }
-      document.head.appendChild(script)
-    })
+    if (this.initializationPromise) {
+      return this.initializationPromise
+    }
+
+    this.initializationPromise = this.initializeGapi()
+    return this.initializationPromise
   }
 
   // Google API 초기화
   private async initializeGapi(): Promise<void> {
-    try {
-      console.log('Google API 초기화 시작:', {
-        hasApiKey: !!import.meta.env.VITE_GOOGLE_API_KEY,
-        hasClientId: !!import.meta.env.VITE_GOOGLE_CLIENT_ID
-      })
+    return new Promise((resolve, reject) => {
+      console.log('Google API 초기화 시작')
       
-      await window.gapi.client.init({
-        apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
-        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-        scope: 'https://www.googleapis.com/auth/calendar'
-      })
+      // API 키 확인
+      const apiKey = import.meta.env.VITE_GOOGLE_API_KEY
+      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+      
+      if (!apiKey || !clientId) {
+        console.error('Google API 키 없음:', { hasApiKey: !!apiKey, hasClientId: !!clientId })
+        reject(new Error('Google API 키가 설정되지 않았습니다.'))
+        return
+      }
 
-      this.isInitialized = true
-      const authInstance = window.gapi.auth2.getAuthInstance()
-      this.isSignedIn = authInstance.isSignedIn.get()
-      console.log('Google API 초기화 완료:', { isSignedIn: this.isSignedIn })
-    } catch (error) {
-      console.error('Google API 초기화 실패:', error)
-      throw new Error('Google Calendar 서비스를 초기화할 수 없습니다.')
-    }
+      // gapi 로드 확인
+      if (typeof window.gapi === 'undefined') {
+        console.error('Google API 스크립트가 로드되지 않았습니다.')
+        reject(new Error('Google API 스크립트가 로드되지 않았습니다.'))
+        return
+      }
+
+      // gapi.load로 client:auth2 로드
+      window.gapi.load('client:auth2', async () => {
+        try {
+          console.log('Google API 클라이언트 초기화 중...')
+          
+          await window.gapi.client.init({
+            apiKey: apiKey,
+            clientId: clientId,
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+            scope: 'https://www.googleapis.com/auth/calendar'
+          })
+
+          this.isInitialized = true
+          const authInstance = window.gapi.auth2.getAuthInstance()
+          this.isSignedIn = authInstance.isSignedIn.get()
+          
+          console.log('Google API 초기화 완료:', { isInitialized: this.isInitialized, isSignedIn: this.isSignedIn })
+          resolve()
+        } catch (error) {
+          console.error('Google API 클라이언트 초기화 실패:', error)
+          reject(error)
+        }
+      })
+    })
   }
 
   // Google 계정 로그인
   async signIn(): Promise<boolean> {
     try {
-      console.log('Google 로그인 시작:', { isInitialized: this.isInitialized, isSignedIn: this.isSignedIn })
+      console.log('Google 로그인 시작')
       
-      if (!this.isInitialized) {
-        console.log('Google API 초기화 중...')
-        await this.loadGapi()
-      }
-
+      // 초기화 확인
+      await this.ensureInitialized()
+      
       const authInstance = window.gapi.auth2.getAuthInstance()
       if (!authInstance) {
         console.error('Google Auth 인스턴스를 찾을 수 없습니다')
@@ -110,8 +113,7 @@ export class GoogleCalendarService {
       
       if (!this.isSignedIn) {
         console.log('Google 로그인 팝업 표시 중...')
-        const result = await authInstance.signIn()
-        console.log('Google 로그인 결과:', result)
+        await authInstance.signIn()
       }
       
       this.isSignedIn = authInstance.isSignedIn.get()
@@ -128,25 +130,10 @@ export class GoogleCalendarService {
     try {
       console.log('구글 캘린더 이벤트 등록 시작:', event)
       
-      // API 키 확인
-      if (!import.meta.env.VITE_GOOGLE_API_KEY || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-        console.error('Google API 키 없음:', {
-          hasApiKey: !!import.meta.env.VITE_GOOGLE_API_KEY,
-          hasClientId: !!import.meta.env.VITE_GOOGLE_CLIENT_ID
-        })
-        return {
-          success: false,
-          message: 'Google Calendar API 키가 설정되지 않았습니다.'
-        }
-      }
-      
       // 초기화 확인
-      if (!this.isInitialized) {
-        console.log('Google API 초기화 필요')
-        await this.loadGapi()
-      }
+      await this.ensureInitialized()
+      
       // 로그인 상태 확인 및 로그인
-      console.log('현재 로그인 상태:', this.isSignedIn)
       if (!this.isSignedIn) {
         console.log('Google 로그인 시도 중...')
         const signedIn = await this.signIn()
@@ -177,14 +164,20 @@ export class GoogleCalendarService {
         }
       }
 
+      console.log('캘린더 이벤트 생성 중:', calendarEvent)
+
       const response = await window.gapi.client.calendar.events.insert({
         calendarId: 'primary',
         resource: calendarEvent
       })
 
+      console.log('캘린더 API 응답:', response)
+
       if (response.status === 200) {
         const eventId = response.result.id
         const calendarLink = `https://calendar.google.com/calendar/event?eid=${eventId}`
+        
+        console.log('이벤트 생성 성공:', { eventId, calendarLink })
         
         return {
           success: true,
@@ -193,6 +186,7 @@ export class GoogleCalendarService {
           calendarLink
         }
       } else {
+        console.error('캘린더 API 응답 오류:', response.status)
         return {
           success: false,
           message: '구글 캘린더 등록에 실패했습니다.'
