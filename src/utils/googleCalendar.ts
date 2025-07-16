@@ -60,6 +60,11 @@ export class GoogleCalendarService {
   // Google API 초기화
   private async initializeGapi(): Promise<void> {
     try {
+      console.log('Google API 초기화 시작:', {
+        hasApiKey: !!import.meta.env.VITE_GOOGLE_API_KEY,
+        hasClientId: !!import.meta.env.VITE_GOOGLE_CLIENT_ID
+      })
+      
       await window.gapi.client.init({
         apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
         clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
@@ -68,7 +73,9 @@ export class GoogleCalendarService {
       })
 
       this.isInitialized = true
-      this.isSignedIn = window.gapi.auth2.getAuthInstance().isSignedIn.get()
+      const authInstance = window.gapi.auth2.getAuthInstance()
+      this.isSignedIn = authInstance.isSignedIn.get()
+      console.log('Google API 초기화 완료:', { isSignedIn: this.isSignedIn })
     } catch (error) {
       console.error('Google API 초기화 실패:', error)
       throw new Error('Google Calendar 서비스를 초기화할 수 없습니다.')
@@ -77,17 +84,29 @@ export class GoogleCalendarService {
 
   // Google 계정 로그인
   async signIn(): Promise<boolean> {
-    if (!this.isInitialized) {
-      await this.loadGapi()
-    }
-
     try {
-      const authInstance = window.gapi.auth2.getAuthInstance()
-      if (!this.isSignedIn) {
-        await authInstance.signIn()
+      console.log('Google 로그인 시작:', { isInitialized: this.isInitialized, isSignedIn: this.isSignedIn })
+      
+      if (!this.isInitialized) {
+        console.log('Google API 초기화 중...')
+        await this.loadGapi()
       }
-      this.isSignedIn = true
-      return true
+
+      const authInstance = window.gapi.auth2.getAuthInstance()
+      if (!authInstance) {
+        console.error('Google Auth 인스턴스를 찾을 수 없습니다')
+        return false
+      }
+      
+      if (!this.isSignedIn) {
+        console.log('Google 로그인 팝업 표시 중...')
+        const result = await authInstance.signIn()
+        console.log('Google 로그인 결과:', result)
+      }
+      
+      this.isSignedIn = authInstance.isSignedIn.get()
+      console.log('Google 로그인 완료:', { isSignedIn: this.isSignedIn })
+      return this.isSignedIn
     } catch (error) {
       console.error('Google 로그인 실패:', error)
       return false
@@ -101,14 +120,28 @@ export class GoogleCalendarService {
       
       // API 키 확인
       if (!import.meta.env.VITE_GOOGLE_API_KEY || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+        console.error('Google API 키 없음:', {
+          hasApiKey: !!import.meta.env.VITE_GOOGLE_API_KEY,
+          hasClientId: !!import.meta.env.VITE_GOOGLE_CLIENT_ID
+        })
         return {
           success: false,
           message: 'Google Calendar API 키가 설정되지 않았습니다.'
         }
       }
+      
+      // 초기화 확인
+      if (!this.isInitialized) {
+        console.log('Google API 초기화 필요')
+        await this.loadGapi()
+      }
+      // 로그인 상태 확인 및 로그인
+      console.log('현재 로그인 상태:', this.isSignedIn)
       if (!this.isSignedIn) {
+        console.log('Google 로그인 시도 중...')
         const signedIn = await this.signIn()
         if (!signedIn) {
+          console.error('Google 로그인 실패')
           return {
             success: false,
             message: 'Google 계정 로그인이 필요합니다.'
