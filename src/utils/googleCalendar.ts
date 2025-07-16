@@ -41,18 +41,28 @@ export class GoogleCalendarService {
   // Google API 스크립트 로드
   private async loadGapi(): Promise<void> {
     if (typeof window.gapi !== 'undefined') {
-      return
+      console.log('Google API 이미 로드됨')
+      return new Promise((resolve, reject) => {
+        window.gapi.load('client:auth2', () => {
+          this.initializeGapi().then(resolve).catch(reject)
+        })
+      })
     }
 
+    console.log('Google API 스크립트 로드 중...')
     return new Promise((resolve, reject) => {
       const script = document.createElement('script')
       script.src = 'https://apis.google.com/js/api.js'
       script.onload = () => {
+        console.log('Google API 스크립트 로드 완료')
         window.gapi.load('client:auth2', () => {
           this.initializeGapi().then(resolve).catch(reject)
         })
       }
-      script.onerror = reject
+      script.onerror = (error) => {
+        console.error('Google API 스크립트 로드 실패:', error)
+        reject(error)
+      }
       document.head.appendChild(script)
     })
   }
