@@ -61,8 +61,8 @@ export class GoogleCalendarService {
   private async initializeGapi(): Promise<void> {
     try {
       await window.gapi.client.init({
-        apiKey: 'AIzaSyBX_YOUR_API_KEY_HERE', // 실제 API 키 필요
-        clientId: 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com', // 실제 클라이언트 ID 필요
+        apiKey: import.meta.env.VITE_GOOGLE_API_KEY,
+        clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
         scope: 'https://www.googleapis.com/auth/calendar'
       })
@@ -97,33 +97,15 @@ export class GoogleCalendarService {
   // 캘린더 이벤트 등록
   async createEvent(event: CalendarEvent): Promise<{ success: boolean; message: string; eventId?: string; calendarLink?: string }> {
     try {
-      // 현재는 Google API 키가 없으므로 시뮬레이션
-      console.log('구글 캘린더 이벤트 등록 시뮬레이션:', event)
+      console.log('구글 캘린더 이벤트 등록 시작:', event)
       
-      // 실제 API 호출 대신 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      // 성공 시뮬레이션 (90% 확률)
-      if (Math.random() > 0.1) {
-        const eventId = `event_${Date.now()}`
-        const calendarLink = `https://calendar.google.com/calendar/event?eid=${eventId}`
-        
-        return {
-          success: true,
-          message: '구글 캘린더에 성공적으로 등록되었습니다!',
-          eventId,
-          calendarLink
-        }
-      } else {
-        // 실패 시뮬레이션
+      // API 키 확인
+      if (!import.meta.env.VITE_GOOGLE_API_KEY || !import.meta.env.VITE_GOOGLE_CLIENT_ID) {
         return {
           success: false,
-          message: '구글 캘린더 등록 중 오류가 발생했습니다. 다시 시도해주세요.'
+          message: 'Google Calendar API 키가 설정되지 않았습니다.'
         }
       }
-
-      // 실제 구현시 사용할 코드 (주석 처리)
-      /*
       if (!this.isSignedIn) {
         const signedIn = await this.signIn()
         if (!signedIn) {
@@ -173,7 +155,6 @@ export class GoogleCalendarService {
           message: '구글 캘린더 등록에 실패했습니다.'
         }
       }
-      */
 
     } catch (error) {
       console.error('구글 캘린더 등록 오류:', error)

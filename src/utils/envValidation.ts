@@ -2,6 +2,8 @@ interface RequiredEnvVars {
   VITE_SUPABASE_URL: string
   VITE_SUPABASE_ANON_KEY: string
   VITE_CLAUDE_API_KEY?: string
+  VITE_GOOGLE_API_KEY?: string
+  VITE_GOOGLE_CLIENT_ID?: string
 }
 
 interface ValidatedEnv extends RequiredEnvVars {
@@ -48,10 +50,14 @@ export function validateEnvironment(): ValidatedEnv {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
     const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
     const claudeApiKey = import.meta.env.VITE_CLAUDE_API_KEY || ''
+    const googleApiKey = import.meta.env.VITE_GOOGLE_API_KEY || ''
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
 
     console.log('Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
       hasSupabaseKey: !!supabaseKey,
+      hasGoogleApiKey: !!googleApiKey,
+      hasGoogleClientId: !!googleClientId,
       isDev: import.meta.env.DEV,
       isProd: import.meta.env.PROD
     })
@@ -69,6 +75,8 @@ export function validateEnvironment(): ValidatedEnv {
       VITE_SUPABASE_URL: validateSupabaseUrl(supabaseUrl),
       VITE_SUPABASE_ANON_KEY: validateSupabaseKey(supabaseKey),
       VITE_CLAUDE_API_KEY: claudeApiKey,
+      VITE_GOOGLE_API_KEY: googleApiKey,
+      VITE_GOOGLE_CLIENT_ID: googleClientId,
       isDevelopment: import.meta.env.DEV,
       isProduction: import.meta.env.PROD,
     }
@@ -82,6 +90,8 @@ export function validateEnvironment(): ValidatedEnv {
         VITE_SUPABASE_URL: 'https://rjttbmqpquhmvbhklnzd.supabase.co',
         VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJqdHRibXFwcXVobXZiaGtsbnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NzgwMjUsImV4cCI6MjA2ODA1NDAyNX0.FOy2_k58ZjTALG_Lt3-x3EQuyh-_3Z_UmlI0QX6Qgcg',
         VITE_CLAUDE_API_KEY: '',
+        VITE_GOOGLE_API_KEY: '',
+        VITE_GOOGLE_CLIENT_ID: '',
         isDevelopment: true,
         isProduction: false,
       }
